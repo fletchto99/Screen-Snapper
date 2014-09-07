@@ -30,7 +30,7 @@ public class ScreenSnapper {
 
 	private static int x, y, width, height;
 
-	public static void main(String[] args) throws ClassNotFoundException,
+	public static void main(final String[] args) throws ClassNotFoundException,
 			InstantiationException, IllegalAccessException,
 			UnsupportedLookAndFeelException {
 		UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
@@ -66,7 +66,9 @@ public class ScreenSnapper {
 							JOptionPane.showMessageDialog(
 									null,
 									"Image saved to "
-											+ snap(x, y, width, height) + "!");
+											+ snap(x, y, width, height,
+													args.length > 0 ? args[0]
+															: null) + "!");
 						} catch (AWTException | IOException e) {
 							e.printStackTrace();
 						}
@@ -94,6 +96,8 @@ public class ScreenSnapper {
 						getVirtualScreenBounds().y);
 			}
 		};
+		window.setFocusableWindowState(false);
+		window.setFocusable(false);
 		window.setVisible(true);
 	}
 
@@ -109,15 +113,16 @@ public class ScreenSnapper {
 		return bounds;
 	}
 
-	public static File snap(int x, int y, int width, int height)
+	public static File snap(int x, int y, int width, int height, String location)
 			throws AWTException, IOException {
 		Robot robot = new Robot();
 		BufferedImage image = robot.createScreenCapture(new Rectangle(x, y,
 				width, height));
-		File path = new File(System.getProperty("user.home"));
-		File test;
-		if ((test = new File(path, "Desktop")).exists()) {
-			path = test;
+		File path = location != null ? new File(location) : new File(
+				System.getProperty("user.home"));
+		File desktop;
+		if (location == null && (desktop = new File(path, "Desktop")).exists()) {
+			path = desktop;
 		}
 		SimpleDateFormat dateFormat = new SimpleDateFormat(
 				"yyyy-MM-dd_HH-mm-ss");
