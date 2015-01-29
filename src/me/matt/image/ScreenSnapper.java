@@ -1,12 +1,6 @@
 package me.matt.image;
 
-import java.awt.AWTException;
 import java.awt.Color;
-import java.awt.Cursor;
-import java.awt.Font;
-import java.awt.FontMetrics;
-import java.awt.Graphics;
-import java.awt.Graphics2D;
 import java.awt.GraphicsDevice;
 import java.awt.GraphicsEnvironment;
 import java.awt.Rectangle;
@@ -15,178 +9,137 @@ import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.awt.image.BufferedImage;
 import java.io.File;
-import java.io.IOException;
 import java.text.SimpleDateFormat;
 import java.util.Calendar;
 
 import javax.imageio.ImageIO;
 import javax.swing.JOptionPane;
-import javax.swing.JPanel;
 import javax.swing.JWindow;
 import javax.swing.UIManager;
 import javax.swing.UnsupportedLookAndFeelException;
 
 public class ScreenSnapper {
+    
+    static JWindow window;
+    
+    public static void main(final String[] args) throws ClassNotFoundException,
+            InstantiationException, IllegalAccessException,
+            UnsupportedLookAndFeelException {
+        UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
+        final Painter painter = new Painter();
+        window = new JWindow() {
+            private static final long serialVersionUID = 1L;
 
-	private static int x, y, width, height;
+            {
+                painter.addMouseListener(new MouseAdapter() {
+                    @Override
+                    public void mousePressed(final MouseEvent event) {
+                        if (event.getButton() == MouseEvent.BUTTON1) {
+                            ScreenSnapper.x = (int) event.getPoint().getX();
+                            ScreenSnapper.y = (int) event.getPoint().getY();
+                        } else {
+                            window.dispose();
+                            System.exit(0);
+                        }
+                    }
 
-	public static void main(final String[] args) throws ClassNotFoundException,
-			InstantiationException, IllegalAccessException,
-			UnsupportedLookAndFeelException {
-		UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
-		final Painter painter = new Painter();
-		JWindow window = new JWindow() {
-			private static final long serialVersionUID = 1L;
+                    @Override
+                    public void mouseReleased(final MouseEvent event) {
+                        painter.clean();
+                        window.dispose();
+                        try {
+                            if ((int) event.getPoint().getX() < ScreenSnapper.x) {
+                                ScreenSnapper.width = ScreenSnapper.x
+                                        - (int) event.getPoint().getX();
+                                ScreenSnapper.x = (int) event.getPoint().getX();
+                            }
+                            if ((int) event.getPoint().getY() < ScreenSnapper.y) {
+                                ScreenSnapper.height = ScreenSnapper.y
+                                        - (int) event.getPoint().getY();
+                                ScreenSnapper.y = (int) event.getPoint().getY();
+                            }
+                            JOptionPane.showMessageDialog(
+                                    null,
+                                    "Image saved to "
+                                            + ScreenSnapper.snap(
+                                                    ScreenSnapper.x,
+                                                    ScreenSnapper.y,
+                                                    ScreenSnapper.width,
+                                                    ScreenSnapper.height,
+                                                    args.length > 0 ? args[0]
+                                                            : null) + "!");
+                        } catch (Exception e) {
+                            e.printStackTrace();
+                        }
+                        System.exit(0);
+                    }
 
-			{
-				painter.addMouseListener(new MouseAdapter() {
-					@Override
-					public void mousePressed(MouseEvent event) {
-						if (event.getButton() == MouseEvent.BUTTON1) {
-							x = (int) event.getPoint().getX();
-							y = (int) event.getPoint().getY();
-						} else {
-							dispose();
-							System.exit(0);
-						}
-					}
+                });
+                painter.addMouseMotionListener(new MouseAdapter() {
+                    @Override
+                    public void mouseDragged(final MouseEvent event) {
+                        if (ScreenSnapper.x + ScreenSnapper.y != 0) {
+                            ScreenSnapper.width = (int) event.getPoint().getX()
+                                    - ScreenSnapper.x;
+                            ScreenSnapper.height = (int) event.getPoint()
+                                    .getY() - ScreenSnapper.y;
+                            painter.update(ScreenSnapper.x, ScreenSnapper.y,
+                                    ScreenSnapper.width, ScreenSnapper.height);
+                        }
+                    }
 
-					@Override
-					public void mouseReleased(MouseEvent event) {
-						dispose();
-						try {
-							if ((int) event.getPoint().getX() < x) {
-								width = x - (int) event.getPoint().getX();
-								x = (int) event.getPoint().getX();
-							}
-							if ((int) event.getPoint().getY() < y) {
-								height = y - (int) event.getPoint().getY();
-								y = (int) event.getPoint().getY();
-							}
-							JOptionPane.showMessageDialog(
-									null,
-									"Image saved to "
-											+ snap(x, y, width, height,
-													args.length > 0 ? args[0]
-															: null) + "!");
-						} catch (AWTException | IOException e) {
-							e.printStackTrace();
-						}
-						System.exit(0);
-					}
+                });
+                setContentPane(painter);
+                setSize(ScreenSnapper.getVirtualScreenBounds().width,
+                        ScreenSnapper.getVirtualScreenBounds().height);
+                setAlwaysOnTop(true);
+                setBackground(new Color(0, 0, 0, 0));
+                setLocation(ScreenSnapper.getVirtualScreenBounds().x,
+                        ScreenSnapper.getVirtualScreenBounds().y);
+            }
+        };
+        window.setFocusableWindowState(false);
+        window.setFocusable(false);
+        window.setVisible(true);
+    }
+    
+    public static Rectangle getVirtualScreenBounds() {
+        final GraphicsEnvironment ge = GraphicsEnvironment
+                .getLocalGraphicsEnvironment();
+        final GraphicsDevice lstGDs[] = ge.getScreenDevices();
 
-				});
-				painter.addMouseMotionListener(new MouseAdapter() {
-					@Override
-					public void mouseDragged(MouseEvent event) {
-						if (x + y != 0) {
-							width = (int) event.getPoint().getX() - x;
-							height = (int) event.getPoint().getY() - y;
-							painter.update(x, y, width, height);
-						}
-					}
+        final Rectangle bounds = new Rectangle();
+        for (final GraphicsDevice gd : lstGDs) {
+            bounds.add(gd.getDefaultConfiguration().getBounds());
+        }
+        return bounds;
+    }
 
-				});
-				setContentPane(painter);
-				setSize(getVirtualScreenBounds().width,
-						getVirtualScreenBounds().height);
-				setAlwaysOnTop(true);
-				setBackground(new Color(0, 0, 0, 0));
-				setLocation(getVirtualScreenBounds().x,
-						getVirtualScreenBounds().y);
-			}
-		};
-		window.setFocusableWindowState(false);
-		window.setFocusable(false);
-		window.setVisible(true);
-	}
 
-	public static Rectangle getVirtualScreenBounds() {
-		GraphicsEnvironment ge = GraphicsEnvironment
-				.getLocalGraphicsEnvironment();
-		GraphicsDevice lstGDs[] = ge.getScreenDevices();
+    public static File snap(final int x, final int y, final int width,
+            final int height, final String location) throws Exception {
+        if (width == 0 || height == 0) {
+            throw new Exception("Width and Height must be greater than 0, no image saved.");
+        }
+        final Robot robot = new Robot();
+        final BufferedImage image = robot.createScreenCapture(new Rectangle(x,
+                y, width, height));
+        File path = location != null ? new File(location) : new File(
+                System.getProperty("user.home"));
+        File desktop;
+        if (location == null && (desktop = new File(path, "Desktop")).exists()) {
+            path = desktop;
+        }
+        final SimpleDateFormat dateFormat = new SimpleDateFormat(
+                "yyyy-MM-dd_HH-mm-ss");
+        final Calendar cal = Calendar.getInstance();
+        ImageIO.write(
+                image,
+                "PNG",
+                path = new File(path, "Snap-"
+                        + dateFormat.format(cal.getTime()) + ".png"));
+        return path;
+    }
 
-		Rectangle bounds = new Rectangle();
-		for (GraphicsDevice gd : lstGDs) {
-			bounds.add(gd.getDefaultConfiguration().getBounds());
-		}
-		return bounds;
-	}
-
-	public static File snap(int x, int y, int width, int height, String location)
-			throws AWTException, IOException {
-		Robot robot = new Robot();
-		BufferedImage image = robot.createScreenCapture(new Rectangle(x, y,
-				width, height));
-		File path = location != null ? new File(location) : new File(
-				System.getProperty("user.home"));
-		File desktop;
-		if (location == null && (desktop = new File(path, "Desktop")).exists()) {
-			path = desktop;
-		}
-		SimpleDateFormat dateFormat = new SimpleDateFormat(
-				"yyyy-MM-dd_HH-mm-ss");
-		Calendar cal = Calendar.getInstance();
-		ImageIO.write(
-				image,
-				"PNG",
-				path = new File(path, "Snap-"
-						+ dateFormat.format(cal.getTime()) + ".png"));
-		return path;
-	}
-}
-
-class Painter extends JPanel {
-
-	private static final long serialVersionUID = 1L;
-
-	private int x = 0, y = 0, width = 0, height = 0;
-
-	public Painter() {
-		setCursor(new Cursor(Cursor.CROSSHAIR_CURSOR));
-	}
-
-	public void update(int x, int y, int width, int height) {
-		this.x = x;
-		this.y = y;
-		this.width = width;
-		this.height = height;
-		repaint();
-	}
-
-	@Override
-	public void paint(Graphics graphics) {
-		Graphics2D g = (Graphics2D) graphics;
-		g.setColor(new Color(0, 0, 0, 1));
-		g.fillRect(0, 0, getWidth(), getHeight());
-
-		g.setColor(new Color(0, 0, 0, 50));
-		g.fillRect(x, y, width, height);
-		g.setColor(Color.WHITE);
-		g.setFont(new Font("Tahoma", 0, 12));
-		FontMetrics fm = g.getFontMetrics();
-		g.drawString(
-				"Width: " + (width > 0 ? width : -width) + "px",
-				x
-						+ (width > 0 ? width - 5 : -5)
-						- (int) fm
-								.getStringBounds(
-										"Width: "
-												+ (width > 0 ? width : -width)
-												+ "px", g).getWidth(),
-				y
-						+ (height > 0 ? height : 0)
-						- (int) fm.getStringBounds(
-								"Height: " + (height > 0 ? height : -height)
-										+ "px", g).getHeight() - 5);
-		g.drawString(
-				"Height: " + (height > 0 ? height : -height) + "px",
-				x
-						+ (width > 0 ? width - 5 : 0 - 5)
-						- (int) fm.getStringBounds(
-								"Height: " + (height > 0 ? height : -height)
-										+ "px", g).getWidth(), y
-						+ (height > 0 ? height : 0) - 5);
-		g.dispose();
-	}
+    private static int x, y, width, height;
 }
