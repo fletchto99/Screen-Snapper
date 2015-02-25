@@ -14,16 +14,16 @@ public class Painter extends JPanel {
     private static final long serialVersionUID = 1L;
 
     private int x = 0, y = 0, width = 0, height = 0;
-    
+
     private boolean dispose = false;
 
     public Painter() {
-        setCursor(new Cursor(Cursor.CROSSHAIR_CURSOR));
+        this.setCursor(new Cursor(Cursor.CROSSHAIR_CURSOR));
     }
-    
+
     public void clean() {
         dispose = true;
-        repaint();
+        this.repaint();
     }
 
     @Override
@@ -33,7 +33,7 @@ public class Painter extends JPanel {
         }
         final Graphics2D g = (Graphics2D) graphics;
         g.setColor(new Color(0, 0, 0, 1));
-        g.fillRect(0, 0, getWidth(), getHeight());
+        g.fillRect(0, 0, this.getWidth(), this.getHeight());
 
         g.setColor(new Color(0, 0, 0, 50));
         g.fillRect(x, y, width, height);
@@ -68,10 +68,10 @@ public class Painter extends JPanel {
 
     public void update(final int x, final int y, final int width,
             final int height) {
-        this.x =  width > 0 ? x : x + width;
-        this.y = height > 0? y : y + height;
+        this.x = width > 0 ? x : x + width;
+        this.y = height > 0 ? y : y + height;
         this.width = Math.abs(width);
         this.height = Math.abs(height);
-        repaint();
+        this.repaint();
     }
 }

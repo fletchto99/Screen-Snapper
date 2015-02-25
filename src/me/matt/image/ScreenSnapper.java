@@ -19,15 +19,25 @@ import javax.swing.UIManager;
 import javax.swing.UnsupportedLookAndFeelException;
 
 public class ScreenSnapper {
-    
-    static JWindow window;
-    
+
+    public static Rectangle getVirtualScreenBounds() {
+        final GraphicsEnvironment ge = GraphicsEnvironment
+                .getLocalGraphicsEnvironment();
+        final GraphicsDevice lstGDs[] = ge.getScreenDevices();
+
+        final Rectangle bounds = new Rectangle();
+        for (final GraphicsDevice gd : lstGDs) {
+            bounds.add(gd.getDefaultConfiguration().getBounds());
+        }
+        return bounds;
+    }
+
     public static void main(final String[] args) throws ClassNotFoundException,
             InstantiationException, IllegalAccessException,
             UnsupportedLookAndFeelException {
         UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
         final Painter painter = new Painter();
-        window = new JWindow() {
+        ScreenSnapper.window = new JWindow() {
             private static final long serialVersionUID = 1L;
 
             {
@@ -38,7 +48,7 @@ public class ScreenSnapper {
                             ScreenSnapper.x = (int) event.getPoint().getX();
                             ScreenSnapper.y = (int) event.getPoint().getY();
                         } else {
-                            window.dispose();
+                            ScreenSnapper.window.dispose();
                             System.exit(0);
                         }
                     }
@@ -46,7 +56,7 @@ public class ScreenSnapper {
                     @Override
                     public void mouseReleased(final MouseEvent event) {
                         painter.clean();
-                        window.dispose();
+                        ScreenSnapper.window.dispose();
                         try {
                             if ((int) event.getPoint().getX() < ScreenSnapper.x) {
                                 ScreenSnapper.width = ScreenSnapper.x
@@ -68,7 +78,7 @@ public class ScreenSnapper {
                                                     ScreenSnapper.height,
                                                     args.length > 0 ? args[0]
                                                             : null) + "!");
-                        } catch (Exception e) {
+                        } catch (final Exception e) {
                             e.printStackTrace();
                         }
                         System.exit(0);
@@ -89,37 +99,25 @@ public class ScreenSnapper {
                     }
 
                 });
-                setContentPane(painter);
-                setSize(ScreenSnapper.getVirtualScreenBounds().width,
+                this.setContentPane(painter);
+                this.setSize(ScreenSnapper.getVirtualScreenBounds().width,
                         ScreenSnapper.getVirtualScreenBounds().height);
-                setAlwaysOnTop(true);
-                setBackground(new Color(0, 0, 0, 0));
-                setLocation(ScreenSnapper.getVirtualScreenBounds().x,
+                this.setAlwaysOnTop(true);
+                this.setBackground(new Color(0, 0, 0, 0));
+                this.setLocation(ScreenSnapper.getVirtualScreenBounds().x,
                         ScreenSnapper.getVirtualScreenBounds().y);
             }
         };
-        window.setFocusableWindowState(false);
-        window.setFocusable(false);
-        window.setVisible(true);
+        ScreenSnapper.window.setFocusableWindowState(false);
+        ScreenSnapper.window.setFocusable(false);
+        ScreenSnapper.window.setVisible(true);
     }
-    
-    public static Rectangle getVirtualScreenBounds() {
-        final GraphicsEnvironment ge = GraphicsEnvironment
-                .getLocalGraphicsEnvironment();
-        final GraphicsDevice lstGDs[] = ge.getScreenDevices();
-
-        final Rectangle bounds = new Rectangle();
-        for (final GraphicsDevice gd : lstGDs) {
-            bounds.add(gd.getDefaultConfiguration().getBounds());
-        }
-        return bounds;
-    }
-
 
     public static File snap(final int x, final int y, final int width,
             final int height, final String location) throws Exception {
         if (width == 0 || height == 0) {
-            throw new Exception("Width and Height must be greater than 0, no image saved.");
+            throw new Exception(
+                    "Width and Height must be greater than 0, no image saved.");
         }
         final Robot robot = new Robot();
         final BufferedImage image = robot.createScreenCapture(new Rectangle(x,
@@ -140,6 +138,8 @@ public class ScreenSnapper {
                         + dateFormat.format(cal.getTime()) + ".png"));
         return path;
     }
+
+    static JWindow window;
 
     private static int x, y, width, height;
 }
